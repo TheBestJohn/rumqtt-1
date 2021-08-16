@@ -68,9 +68,11 @@ impl RemoteLink {
             let connect = network.read_connect().await?;
 
             // Validate credentials if they exist
+			#[cfg(not(feature = "use-sqlite-creds"))]
             if let Some(credentials) = &config.login_credentials {
                 let validated = match &connect.login {
                     Some(l) => {
+						info!("{:?}", l);
                         let mut validated = false;
 
                         // Iterate through all the potential credentials
@@ -91,6 +93,33 @@ impl RemoteLink {
                     return Err(Error::InvalidUsernameOrPassword);
                 }
             }
+
+
+			#[cfg(feature = "use-sqlite-creds")]
+			if let Some(path) = &config.db_path {
+				match rusqlite::Connection::open(path) {
+					Ok(db) =>{
+						let validated = match &connect.login {
+							Some(l) => {
+								info!("{:?}", l);
+                        		let mut validated = false;
+								validated
+							}
+							None => false,
+						};
+
+						// Return error if the username/password werenot found
+						if validated == false {
+							return Err(Error::InvalidUsernameOrPassword);
+						}
+					}
+					Err(e) =>{
+						error!("{:?}", e);
+						return Err(Error::InvalidUsernameOrPassword);
+					}
+				
+				}
+			}
 
             Ok::<_, Error>(connect)
         })

@@ -50,6 +50,12 @@ use std::fs::File;
 #[cfg(feature = "use-rustls")]
 use std::io::BufReader;
 
+#[cfg(feature = "use-sqlite-creds")]
+use std::num::NonZeroU32;
+#[cfg(feature = "use-sqlite-creds")]
+use ring::{digest, pbkdf2};
+
+
 #[derive(Debug, thiserror::Error)]
 #[error("Acceptor error")]
 pub enum Error {
@@ -87,6 +93,8 @@ pub enum Error {
     InvalidServerPass(),
     #[error("Invalid server key file {0}")]
     InvalidServerKey(String),
+	#[error("Invalid sqlite file {0}")]
+    InvalidDatabase(String),
     RustlsNotEnabled,
     NativeTlsNotEnabled,
     Disconnected,
@@ -153,6 +161,10 @@ pub struct ConnectionSettings {
     pub max_inflight_count: u16,
     pub max_inflight_size: usize,
     pub login_credentials: Option<Vec<ConnectionLoginCredentials>>,
+	#[cfg(feature = "use-sqlite-creds")]
+	pub db_path: Option<String>,
+	#[cfg(feature = "use-sqlite-creds")]
+	pub hash_iterations: Option<NonZeroU32>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -359,6 +371,18 @@ impl Server {
         Err(Error::RustlsNotEnabled)
     }
 
+	#[allow(dead_code)]
+    #[cfg(feature = "use-sqlite-creds")]
+    fn setup_db(&self) -> Result<rusqlite::Connection, Error> {
+		info!("{:?}", self.config.connections.hash_iterations);
+		// self.config.connections.hash_iterations = Some(NonZeroU32::new(100_000).unwrap());
+		info!("{:?}", self.config.connections.db_path);
+
+		let path = format!("{:?}", self.config.connections.db_path);
+        Err(Error::InvalidDatabase(path))
+
+    }
+
     async fn start(&self) -> Result<(), Error> {
         let listener = TcpListener::bind(&self.config.listen).await?;
         let delay = Duration::from_millis(self.config.next_connection_delay_ms);
@@ -443,6 +467,11 @@ impl Server {
                 info!("{}. Accepting TCP connection from: {}", count, addr);
                 Network::new(stream, max_incoming_size)
             };
+
+			#[cfg(feature = "use-sqlite-creds")]
+			self.setup_db();
+
+
 
             count += 1;
 

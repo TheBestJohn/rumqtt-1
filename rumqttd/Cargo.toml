@@ -23,6 +23,7 @@ default = ["use-rustls"]
 prof = ["pprof"]
 use-rustls = ["tokio-rustls"]
 use-native-tls = ["tokio-native-tls"]
+use-sqlite-creds = ["rusqlite", "ring"]
 
 [dependencies]
 rumqttlog = { path = "../rumqttlog", version = "0.7"}
@@ -42,6 +43,8 @@ pprof = { version = "0.4", features = ["flamegraph", "protobuf"], optional = tru
 # Optional
 tokio-rustls = { version = "0.22", optional = true }
 tokio-native-tls = { version = "0.3", optional = true }
+rusqlite = { version = "0.25.3", optional = true }
+ring = { version = "0.16.20", optional = true }
 
 [target.'cfg(not(target_env = "msvc"))'.dependencies]
 jemallocator = "0.3"

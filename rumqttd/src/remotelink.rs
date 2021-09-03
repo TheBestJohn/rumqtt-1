@@ -52,6 +52,8 @@ pub enum Error {
     InvalidUsernameOrPassword,
     #[error("Disconnect request")]
     Disconnect,
+	#[error("SQLite Error")]
+    SQLiteErr(#[from] rusqlite::Error),
 }
 
 impl RemoteLink {
@@ -100,9 +102,11 @@ impl RemoteLink {
 				match rusqlite::Connection::open(path) {
 					Ok(db) =>{
 						let validated = match &connect.login {
-							Some(l) => {
-								info!("{:?}", l);
-                        		let mut validated = false;
+							Some(login) => {
+								info!("{:?}", &login);
+								let pass:String = db.query_row("SELECT * FROM users WHERE name == (?)", [&login.username], |row| row.get(2))?;
+								info!("check users {:?}", pass);
+                        		let mut validated = true;
 								validated
 							}
 							None => false,

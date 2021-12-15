@@ -6,6 +6,7 @@ use mqttbytes::*;
 use rumqttlog::{
     Connection, ConnectionAck, Event, Notification, Receiver, RecvError, SendError, Sender,
 };
+use rusqlite::*;
 
 use std::sync::Arc;
 use std::{io, mem};
@@ -49,11 +50,11 @@ pub enum Error {
     #[error("Persistent session requires valid client id")]
     InvalidClientId,
     #[error("Invalid username or password provided")]
-    InvalidUsernameOrPassword,
-    #[error("Disconnect request")]
-    Disconnect,
+    InvalidUsernameOrPassword,	
 	#[error("SQLite Error")]
-    SQLiteErr(#[from] rusqlite::Error),
+	SQLiteErr(#[from] rusqlite::Error),
+    #[error("Disconnect request")]
+    Disconnect
 }
 
 impl RemoteLink {
@@ -74,7 +75,7 @@ impl RemoteLink {
             if let Some(credentials) = &config.login_credentials {
                 let validated = match &connect.login {
                     Some(l) => {
-						info!("{:?}", l);
+						info!("This is data not usesqlite {:?}", l);
                         let mut validated = false;
 
                         // Iterate through all the potential credentials
@@ -103,10 +104,13 @@ impl RemoteLink {
 					Ok(db) =>{
 						let validated = match &connect.login {
 							Some(login) => {
-								info!("{:?}", &login);
-								let pass:String = db.query_row("SELECT * FROM users WHERE name == (?)", [&login.username], |row| row.get(2))?;
-								info!("check users {:?}", pass);
-                        		let mut validated = true;
+								let pass:String = db.query_row("SELECT * FROM users WHERE username == (?)", [&login.username], |row| row.get(2))?;
+								let validated;
+								if &login.password == &pass {
+									validated = true;
+								}else {
+									validated = false;
+								}
 								validated
 							}
 							None => false,

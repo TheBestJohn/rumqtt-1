@@ -31,6 +31,10 @@ use std::io::Read;
 use tokio_native_tls::native_tls;
 #[cfg(feature = "use-native-tls")]
 use tokio_native_tls::native_tls::Error as NativeTlsError;
+
+#[cfg(feature = "use-sqlite-creds")]
+use rusqlite::*;
+
 pub mod async_locallink;
 mod consolelink;
 mod locallink;
@@ -374,9 +378,9 @@ impl Server {
 	#[allow(dead_code)]
     #[cfg(feature = "use-sqlite-creds")]
     fn setup_db(&self) -> Result<rusqlite::Connection, Error> {
-		info!("{:?}", self.config.connections.hash_iterations);
+		info!("Iterations {:?}", self.config.connections.hash_iterations);
 		// self.config.connections.hash_iterations = Some(NonZeroU32::new(100_000).unwrap());
-		info!("{:?}", self.config.connections.db_path);
+		info!("path {:?}", self.config.connections.db_path);
 
 		let path = format!("{:?}", self.config.connections.db_path);
         Err(Error::InvalidDatabase(path))

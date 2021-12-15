@@ -2,6 +2,9 @@ use argh::FromArgs;
 use librumqttd::{Broker, Config};
 use std::path::PathBuf;
 
+#[cfg(feature = "use-sqlite-creds")]
+use rusqlite::*;
+
 #[cfg(not(target_env = "msvc"))]
 #[global_allocator]
 static ALLOC: jemallocator::Jemalloc = jemallocator::Jemalloc;
